@@ -3,7 +3,7 @@ title: "R Notebook"
 output: github_document
 ---
 
-premier test de control de version 
+premier test de control de version.
 
 
 
