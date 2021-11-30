@@ -55,7 +55,70 @@ filtRs <- file.path(filt_path, paste0(sampleNames, "_R_filt.fastq.gz"))
 ```
 
 ```{r}
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),
+              maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
+              compress=TRUE, multithread=TRUE) 
+head(out)
+```
+```{r}
+derepFs <- derepFastq(filtFs, verbose=TRUE)
+derepRs <- derepFastq(filtRs, verbose=TRUE)
+names(derepFs) <- sampleNames
+names(derepRs) <- sampleNames
+```
 
+```{r}
+errF <- learnErrors(filtFs, multithread=TRUE)
+```
+```{r}
+errR <- learnErrors(filtRs, multithread=TRUE)
+```
+
+```{r}
+plotErrors(errF)
+plotErrors(errR)
+```
+```{r}
+dadaFs <- dada(derepFs, err=errF, multithread=TRUE)
+dadaRs <- dada(derepRs, err=errR, multithread=TRUE)
+```
+
+```{r}
+dadaFs[[1]]
+```
+
+```{r}
+mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs)
+```
+
+```{r}
+seqtabAll <- makeSequenceTable(mergers[!grepl("Mock", names(mergers))])
+table(nchar(getSequences(seqtabAll)))
+```
+```{r}
+seqtabNoC<-removeBimeraDenovo(seqtabAll)
+```
+
+```{bash}
+cd ~
+wget  https://zenodo.org/record/4587955/files/silva_nr99_v138.1_train_set.fa.gz
+```
+
+```{r}
+fastaRef <-"/home/rstudio/silva_nr99_v138.1_train_set.fa.gz"
+taxTab<-assignTaxonomy(seqtabNoC, refFasta=fastaRef, multithread=TRUE)
+unname(head(taxTab))
+```
+```{r}
+seqs <- getSequences(seqtabNoC)
+names(seqs) <- seqs
+alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA,verbose=FALSE)
+```
+s
+```{r}
+install.packages("gitcreds")
+library(gitcreds)
+gitcreds_set()
 ```
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 
