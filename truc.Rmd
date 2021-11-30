@@ -4,7 +4,7 @@ output: github_document
 ---
 
 premier test de control de version.
-relourelou
+relou
 
 
 
@@ -16,9 +16,47 @@ This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute
 Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
 
 ```{r}
-plot(cars)
+fnFs <- sort(list.files(miseq_path, pattern="_R1_001.fastq"))
+fnRs <- sort(list.files(miseq_path, pattern="_R2_001.fastq"))
 ```
 
+````{r}
+set.seed(100)
+miseq_path <- "/home/rstudio/MiSeq_SOP"
+list.files(miseq_path)
+````
+
+```{r}
+fnFs <- sort(list.files(miseq_path, pattern="_R1_001.fastq"))
+fnRs <- sort(list.files(miseq_path, pattern="_R2_001.fastq"))
+#R1 = read1 et R2 = read 2 ordonnées par ordre alphabétique
+sampleNames <- sapply(strsplit(fnFs, "_"), `[`, 1)
+#a chacun des elements de la liste fnFs transformé (fonction strsplip on garde que la première partie d'une liste séparé par des _= transformer un nom de fichier en nom d'échantillon) 
+fnFs <- file.path(miseq_path, fnFs)
+fnRs <- file.path(miseq_path, fnRs)
+#construire le chemin vers un fichier indépendant de la plateforme permet de l'utilisé sur toute les ordi (mac, linux...)
+fnFs[1:3]
+fnRs[1:3]
+#liste > afficher les 3 premiers éléments de la liste
+```
+```{r}
+plotQualityProfile(fnFs[1:2])
+#permet de voir les score de qualité pour chacune des position de nucléo 0 à 250 > freq apparition gris claire = mauvais score mais la plus part noir le score le plus freq c'est 38. Blanc très mauvais. vert = score de qualité moyenne. rouge proportion des reads qui va a la position 250 
+```
+```{r}
+plotQualityProfile(fnRs[1:2])
+```
+
+```{r}
+filt_path <- file.path(miseq_path, "filtered")
+if(!file_test("-d", filt_path)) dir.create(filt_path)
+filtFs <- file.path(filt_path, paste0(sampleNames, "_F_filt.fastq.gz"))
+filtRs <- file.path(filt_path, paste0(sampleNames, "_R_filt.fastq.gz"))
+```
+
+```{r}
+
+```
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 
 When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
