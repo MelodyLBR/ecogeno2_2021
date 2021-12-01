@@ -494,7 +494,7 @@ testing <- dataMatrix[-inTrain,]
 plsFit <- train(age ~ ., data = training,
                 method = "pls", preProc = "center")
 ```
-
+lkl
 
 ```{r}
 install.packages("gitcreds")
