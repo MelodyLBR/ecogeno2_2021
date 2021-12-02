@@ -16,11 +16,14 @@ library("knitr")
 library("BiocStyle")
 .cran_packages <- c("ggplot2", "gridExtra", "devtools")
 install.packages(.cran_packages) 
-.bioc_packages <- c("dada2", "phyloseq", "DECIPHER", 
-sapply(c(.cran_packages, .bioc_packages), require, character.only=TRUE)
+.bioc_packages <- c("dada2", "phyloseq", "DECIPHER", "phangorn")
+BiocManager::install(.bioc_packages)
+# Load packages into session, and print package version
+sapply(c(.cran_packages, .bioc_packages),require, character.only = TRUE)
 ```
 
 ## Récupération des amplicons
+
 ```{r}
 fnFs <- sort(list.files(miseq_path, pattern="_R1_001.fastq"))
 fnRs <- sort(list.files(miseq_path, pattern="_R2_001.fastq"))
@@ -34,10 +37,10 @@ list.files(miseq_path)
 
 
 ## Filtrer et rogner
+
 ```{r}
 fnFs <- sort(list.files(miseq_path, pattern="_R1_001.fastq"))
 fnRs <- sort(list.files(miseq_path, pattern="_R2_001.fastq"))
-#R1 = read1 et R2 = read 2 ordonnées par ordre alphabétique
 sampleNames <- sapply(strsplit(fnFs, "_"), `[`, 1)
 fnFs <- file.path(miseq_path, fnFs)
 fnRs <- file.path(miseq_path, fnRs)
@@ -46,7 +49,6 @@ fnRs[1:3]
 ```
 ```{r}
 plotQualityProfile(fnFs[1:2])
-#permet de voir les score de qualité pour chacune des position de nucléo 0 à 250 > freq apparition gris claire = mauvais score mais la plus part noir le score le plus freq c'est 38. Blanc très mauvais. vert = score de qualité moyenne. rouge proportion des reads qui va a la position 250 
 ```
 ```{r}
 plotQualityProfile(fnRs[1:2])
@@ -57,7 +59,6 @@ filt_path <- file.path(miseq_path, "filtered")
 if(!file_test("-d", filt_path)) dir.create(filt_path)
 filtFs <- file.path(filt_path, paste0(sampleNames, "_F_filt.fastq.gz"))
 filtRs <- file.path(filt_path, paste0(sampleNames, "_R_filt.fastq.gz"))
-#créer des dossiers 
 ```
 
 ```{r}
@@ -66,6 +67,9 @@ out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),
               compress=TRUE, multithread=TRUE) 
 head(out)
 ```
+
+
+## Déduire des variantes de séquence
 ```{r}
 derepFs <- derepFastq(filtFs, verbose=TRUE)
 derepRs <- derepFastq(filtRs, verbose=TRUE)
@@ -93,6 +97,7 @@ dadaRs <- dada(derepRs, err=errR, multithread=TRUE)
 dadaFs[[1]]
 ```
 
+## Construire une table de séquence et supprimer des chimères
 ```{r}
 mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs)
 ```
@@ -105,6 +110,7 @@ table(nchar(getSequences(seqtabAll)))
 seqtabNoC<-removeBimeraDenovo(seqtabAll)
 ```
 
+## Attribuer une taxonomie
 ```{bash}
 cd ~
 wget  https://zenodo.org/record/4587955/files/silva_nr99_v138.1_train_set.fa.gz
@@ -115,6 +121,8 @@ fastaRef <-"/home/rstudio/silva_nr99_v138.1_train_set.fa.gz"
 taxTab<-assignTaxonomy(seqtabNoC, refFasta=fastaRef, multithread=TRUE)
 unname(head(taxTab))
 ```
+
+## Construire un arbre phylogénétique
 ```{r}
 seqs <- getSequences(seqtabNoC)
 names(seqs) <- seqs
@@ -132,6 +140,7 @@ fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE,
 detach("package:phangorn", unload=TRUE)
 ```
 
+## Combiner des données dans un objet phyloseq
 ```{r}
 samdf <- read.csv("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/MIMARKS_Data_combined.csv",header=TRUE)
 samdf$SampleID <- paste0(gsub("00", "", samdf$host_subject_id), "D", samdf$age-21)
@@ -157,6 +166,8 @@ ps <- prune_samples(sample_names(ps) != "Mock", ps) # Remove mock sample
 ps
 ```
 
+
+## Utiliser phyloseq
 ```{r}
 ps_connect <-url("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/ps.rds")
 ps = readRDS(ps_connect)
@@ -343,6 +354,7 @@ qplot(rel_abund[, 12], geom = "histogram",binwidth=0.05) +
   xlab("Relative abundance")
 ```
 
+## Différents projections d'ordination
 ```{r}
 outliers <- c("F5D165", "F6D165", "M3D175", "M4D175", "M5D175", "M6D175")
 ps <- prune_samples(!(sample_names(ps) %in% outliers), ps)
@@ -487,19 +499,8 @@ ggplot() +
   theme(panel.border = element_rect(color = "#787878", fill = alpha("white", 0)))
 ```
 
-```{r}
-library(caret)
-sample_data(pslog)$age2 <- cut(sample_data(pslog)$age, c(0, 100, 400))
-dataMatrix <- data.frame(age = sample_data(pslog)$age2, otu_table(pslog))
-# take 8 mice at random to be the training set, and the remaining 4 the test set
-trainingMice <- sample(unique(sample_data(pslog)$host_subject_id), size = 8)
-inTrain <- which(sample_data(pslog)$host_subject_id %in% trainingMice)
-training <- dataMatrix[inTrain,]
-testing <- dataMatrix[-inTrain,]
-plsFit <- train(age ~ ., data = training,
-                method = "pls", preProc = "center")
-```
-lkl
+
+
 
 ```{r}
 install.packages("gitcreds")
