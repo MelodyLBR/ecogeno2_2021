@@ -1,20 +1,26 @@
 ---
-title: "R Notebook"
+title: "Tutoriel Dada2"
 output: github_document
 ---
-
-premier test de control de version.
-relou
-
-
-
-
 
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
 
 Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
 
+#Tutoriel pour l'analyse des données du microbiome : des lectures brutes aux analyses de la communauté.
+
+##Package nécessaires 
+```{r}
+library("knitr")
+library("BiocStyle")
+.cran_packages <- c("ggplot2", "gridExtra", "devtools")
+install.packages(.cran_packages) 
+.bioc_packages <- c("dada2", "phyloseq", "DECIPHER", 
+sapply(c(.cran_packages, .bioc_packages), require, character.only=TRUE)
+```
+
+## Récupération des amplicons
 ```{r}
 fnFs <- sort(list.files(miseq_path, pattern="_R1_001.fastq"))
 fnRs <- sort(list.files(miseq_path, pattern="_R2_001.fastq"))
@@ -26,18 +32,17 @@ miseq_path <- "/home/rstudio/MiSeq_SOP"
 list.files(miseq_path)
 ````
 
+
+## Filtrer et rogner
 ```{r}
 fnFs <- sort(list.files(miseq_path, pattern="_R1_001.fastq"))
 fnRs <- sort(list.files(miseq_path, pattern="_R2_001.fastq"))
 #R1 = read1 et R2 = read 2 ordonnées par ordre alphabétique
 sampleNames <- sapply(strsplit(fnFs, "_"), `[`, 1)
-#a chacun des elements de la liste fnFs transformé (fonction strsplip on garde que la première partie d'une liste séparé par des _= transformer un nom de fichier en nom d'échantillon) 
 fnFs <- file.path(miseq_path, fnFs)
 fnRs <- file.path(miseq_path, fnRs)
-#construire le chemin vers un fichier indépendant de la plateforme permet de l'utilisé sur toute les ordi (mac, linux...)
 fnFs[1:3]
 fnRs[1:3]
-#liste > afficher les 3 premiers éléments de la liste
 ```
 ```{r}
 plotQualityProfile(fnFs[1:2])
