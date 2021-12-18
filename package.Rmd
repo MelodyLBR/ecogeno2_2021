@@ -19,38 +19,12 @@ BiocManager::install("Rhtslib")
 ```{r}
 library("knitr")
 library("BiocStyle")
-.cran_packages <- c("ggplot2", "gridExtra", "devtools")
+.cran_packages <-c ("ggplot2", "gridExtra", "devtools")
 install.packages(.cran_packages) 
 .bioc_packages <- c("dada2", "phyloseq", "DECIPHER", "phangorn")
-BiocManager::install(.bioc_packages)
-# Load packages into session, and print package version
+BiocManager::install(.bioc_packages)# Load packages into session, and print package version
 sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
-install.packages(.cran_packages) 
-.bioc_pack<- c("phangorn")
 ```
-
-```{bash}
-cd ~
-wget https://mothur.s3.us-east-2.amazonaws.com/wiki/miseqsopdata.zip
-unzip miseqsopdata.zip
-```
-
-````{r}
-set.seed(100)
-miseq_path <- "/home/rstudio/MiSeq_SOP"
-list.files(miseq_path)
-````
-
-
-
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
-```{r}
-
-```
-
 
 ```{r}
 install.packages("gitcreds")

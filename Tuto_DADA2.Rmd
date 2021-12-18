@@ -8,7 +8,7 @@ output: github_document
 
 ## Package nécessaires 
 
-```{r}
+```{r message = FALSE}
 library("knitr")
 library("BiocStyle")
 .cran_packages <- c("ggplot2", "gridExtra", "devtools")
@@ -67,7 +67,7 @@ head(out)
 
 ## Déduire des variantes de séquence
 
-```{r}
+```{r message = FALSE}
 derepFs <- derepFastq(filtFs, verbose=TRUE)
 derepRs <- derepFastq(filtRs, verbose=TRUE)
 names(derepFs) <- sampleNames
@@ -110,7 +110,7 @@ seqtabNoC<-removeBimeraDenovo(seqtabAll)
 
 ## Attribuer une taxonomie
 
-```{bash}
+```{bash message = FALSE}
 cd ~
 wget  https://zenodo.org/record/4587955/files/silva_nr99_v138.1_train_set.fa.gz
 ```
@@ -302,37 +302,40 @@ grid.arrange(nrow = 2,  plotBefore, plotAfter)
 psOrd = subset_taxa(ps3ra, Order == "Lactobacillales")
 plot_abundance(psOrd, Facet = "Genus", Color = NULL)
 ```
-```{r}
+
+```{r message = FALSE}
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install(version = "3.14")
 ```
 
-```{r}
+```{r message = FALSE}
 .cran_packages <- c( "shiny","miniUI", "caret", "pls", "e1071", "ggplot2", "randomForest", "dplyr", "ggrepel", "nlme", "devtools",
                   "reshape2", "PMA", "structSSI", "ade4",
                   "ggnetwork", "intergraph", "scales")
 .github_packages <- c("jfukuyama/phyloseqGraphTest")
 .bioc_packages <- c("genefilter", "impute")
 ```
-```{r}
+
+```{r message = FALSE}
 .inst <- .cran_packages %in% installed.packages()
 if (any(!.inst)){
   install.packages(.cran_packages[!.inst],repos = "http://cran.rstudio.com/")
 }
 ```
-```{r}
+
+```{r message = FALSE}
 .inst <- .github_packages %in% installed.packages()
 if (any(!.inst)){
   devtools::install_github(.github_packages[!.inst])
 }
 ```
-```{r}
+
+```{r message = FALSE}
 .inst <- .bioc_packages %in% installed.packages()
 if(any(!.inst)){BiocManager::install(.bioc_packages[!.inst])
 }
 ```
-    b
 
 ```{r}
 qplot(sample_data(ps)$age, geom = "histogram",binwidth=20) + xlab("age")
