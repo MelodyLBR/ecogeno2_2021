@@ -1,0 +1,129 @@
+---
+title: "Analyse des données avec Phyloseq"
+author : Mélody Lebrun
+date: "3 janvier 2022"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Préparation de l'environnement
+
+```{r}
+library(phyloseq)
+library(ggplot2)
+library(readr)
+library(phangorn)
+library(DECIPHER)
+```
+
+```{r}
+library("knitr")
+library("BiocStyle")
+.cran_packages <-c ("ggplot2", "gridExtra", "devtools")
+install.packages(.cran_packages) 
+.bioc_packages <- c("dada2", "phyloseq", "DECIPHER", "phangorn")
+BiocManager::install(.bioc_packages)# Load packages into session, and print package version
+sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
+```
+
+```{r}
+load("02_Data-analysis-with-DADA2_FinalEnv")
+```
+
+# Construire un arbre phylogénétique permettant de relié les variants de séquences
+
+```{r}
+seqs <- getSequences(seqtabNoC)
+names(seqs) <- seqs 
+alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA,verbose=FALSE)
+```
+
+```{r}
+phangAlign <- phyDat(as(alignment, "matrix"), type="DNA")
+dm <- dist.ml(phangAlign)
+treeNJ <- NJ(dm)
+fit = pml(treeNJ, data=phangAlign)
+fitGTR <- update(fit, k=4, inv=0.2)
+fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE,
+        rearrangement = "stochastic", control = pml.control(trace = 0))
+detach("package:phangorn", unload=TRUE)
+```
+
+# Combiner des données dans un objet phyloseq
+
+```{r}
+Metadonnees<-read.csv(file="SraRunTable_modifié.txt")
+```
+
+```{r}
+Metadonnees$Sample.Name <- paste0(gsub("00", "", Metadonnees$Sample.Name), "D")
+Metadonnees <- Metadonnees[!duplicated(Metadonnees$Sample.Name),] # Remove dupicate entries for reverse reads
+rownames(seqtabAll) <- gsub("124", "125", rownames(seqtabAll)) # Fix discrepancy
+all(rownames(seqtabAll) %in% Metadonnees$Sample.Name) # TRUE
+```
+
+```{r}
+rownames(Metadonnees) <- Metadonnees$Sample.Name
+keep.cols <- c("Run","env_medium","host_issue_sampled","lat_lon") 
+```
+
+######## pb #########
+
+
+Metadonnees <- Metadonnees[rownames(seqtabAll), keep.cols]
+
+
+# Création de plusieurs objects 
+L'idée est de stratifier les données de tel sortes à simplifier le tableau et de séparer les types d'échantillon, entre tissu intestinal, contenu intestinal et sédiment et entre station. 
+
+```{r}
+
+SediCH=(Metadonnees$env_medium=="shallow marine sediment [ENVO:00000428]" | Metadonnees$lat_lon=="62.21879 S 58.95786 W")
+SediA=(Metadonnees$env_medium=="shallow marine sediment [ENVO:00000428]" | Metadonnees$lat_lon=="62.209556 S 58.92900 W")
+TissuCH=(Metadonnees$host_tissue_sampled=="Gut membrane" | Metadonnees$lat_lon=="62.21879 S 58.95786 W")
+TissuA=(Metadonnees$host_tissue_sampled=="Gut membrane" | Metadonnees$lat_lon=="62.209556 S 58.92900 W")
+ContenuCH=(Metadonnees$host_tissue_sampled=="Gut content" | Metadonnees$lat_lon=="62.21879 S 58.95786 W")
+ContenuA=(Metadonnees$host_tissue_sampled=="Gut content" | Metadonnees$lat_lon=="62.209556 S 58.92900 W")
+```
+
+```{r}
+samples.out <- rownames(Metadonnees)
+subject <- sapply(strsplit(samples.out, "D"), `[`, 1)
+ech<- substr(subject,17,25)
+site<- substr(subject,26,27)
+samdf <- data.frame(Subject=subject, Echantillon=ech)
+rownames(samdf) <- samples.out
+```
+
+```{r}
+library(phangorn)
+library(DECIPHER)
+seqs <- getSequences(seqtabNoC)
+names(seqs) <- seqs # This propagates to the tip labels of the tree
+alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA,verbose=FALSE)
+phangAlign <- phyDat(as(alignment, "matrix"), type="DNA")
+dm <- dist.ml(phangAlign)
+treeNJ <- NJ(dm) # Note, tip order != sequence order
+fit = pml(treeNJ, data=phangAlign)
+fitGTR <- update(fit, k=4, inv=0.2)
+fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE,
+        rearrangement = "stochastic", control = pml.control(trace = 0))
+detach("package:phangorn", unload=TRUE)
+```
+
+##########pb##########
+
+library(phyloseq)
+ps <- phyloseq(otu_table(seqtabNoC, taxa_are_rows=FALSE), 
+               sample_data(Metadonnees), 
+               tax_table(taxTab),phy_tree(fitGTR$tree))
+ps <- prune_samples(sample_names(ps) != "Mock", ps) # Remove mock sample
+ps
+
+Je ne peux pas réalisé la suite 
